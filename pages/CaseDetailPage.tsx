@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Case, Artefact, CaseStatus, CasePriority, User, UserRole } from '../types';
-import { getCaseById, getArtefactsForCase, getUsers, getCollectionJobsForCase, CollectionJob } from '../services/mockApi';
+import { getCaseById, getArtefactsForCase, getUsers, getCollectionJobsForCase, CollectionJob, getLogsForCase, CaseLog } from '../services/mockApi';
 import { useAuth } from '../context/AuthContext';
 import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
-import { PlusIcon } from '../components/icons/Icons';
+import { PlusIcon, PlusCircleIcon, PencilSquareIcon, ArrowDownTrayIcon, DocumentPlusIcon } from '../components/icons/Icons';
 import ArtefactForm from '../components/artefacts/ArtefactForm';
 import CollectionWizardModal from '../components/collection/CollectionWizardModal';
 
@@ -37,11 +37,20 @@ const getJobStatusColor = (status: CollectionJob['status']) => {
     }
 }
 
+const getActivityIcon = (action: string) => {
+    if (action.includes('CREATED')) return <PlusCircleIcon className="w-5 h-5 text-green-500" />;
+    if (action.includes('UPDATED')) return <PencilSquareIcon className="w-5 h-5 text-yellow-500" />;
+    if (action.includes('COLLECTION')) return <ArrowDownTrayIcon className="w-5 h-5 text-blue-500" />;
+    if (action.includes('ARTEFACT')) return <DocumentPlusIcon className="w-5 h-5 text-purple-500" />;
+    return <div className="w-5 h-5"></div>;
+};
+
 const CaseDetailPage: React.FC = () => {
     const { caseId } = useParams<{ caseId: string }>();
     const [caseData, setCaseData] = useState<Case | null>(null);
     const [artefacts, setArtefacts] = useState<Artefact[]>([]);
     const [collectionJobs, setCollectionJobs] = useState<CollectionJob[]>([]);
+    const [logs, setLogs] = useState<CaseLog[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [isArtefactModalOpen, setIsArtefactModalOpen] = useState(false);
@@ -56,12 +65,14 @@ const CaseDetailPage: React.FC = () => {
         if (!caseId) return;
         try {
             const id = parseInt(caseId, 10);
-            const [artefactsInfo, jobsInfo] = await Promise.all([
+            const [artefactsInfo, jobsInfo, logsInfo] = await Promise.all([
                 getArtefactsForCase(id),
                 getCollectionJobsForCase(id),
+                getLogsForCase(id),
             ]);
             setArtefacts(artefactsInfo);
             setCollectionJobs(jobsInfo.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+            setLogs(logsInfo);
         } catch (error) {
             console.error("Failed to refresh case data:", error);
         }
@@ -164,6 +175,33 @@ const CaseDetailPage: React.FC = () => {
                         <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Case Description</h3>
                         <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{caseData.description}</p>
                     </div>
+
+                    {/* NEW: Case Activity Log */}
+                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                        <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Case Activity Log</h3>
+                        <div className="relative pl-6">
+                            <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
+                             <ul className="space-y-6">
+                                {logs.map(log => (
+                                    <li key={log.log_id} className="relative">
+                                        <div className="absolute -left-[34px] top-0.5 flex items-center justify-center w-5 h-5 bg-white dark:bg-gray-800 rounded-full">
+                                            {getActivityIcon(log.action)}
+                                        </div>
+                                        <div className="ml-4">
+                                            <p className="text-sm">
+                                                <span className="font-semibold text-gray-900 dark:text-white">{getUserFullName(log.user_id)}</span>
+                                                <span className="text-gray-600 dark:text-gray-400"> {log.details}</span>
+                                            </p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+                                                {new Date(log.timestamp).toLocaleString()}
+                                            </p>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+
 
                     {/* Collection Jobs */}
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">

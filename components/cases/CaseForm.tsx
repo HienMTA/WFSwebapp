@@ -54,11 +54,17 @@ const CaseForm: React.FC<CaseFormProps> = ({ initialData, onSave, onCancel }) =>
     setLoading(true);
     setError('');
 
+    if (!currentUser) {
+        setError("You must be logged in to save a case.");
+        setLoading(false);
+        return;
+    }
+
     try {
         if (initialData) {
-            await updateCase(initialData.case_id, formData);
-        } else if(currentUser) {
-            // FIX: Add `created_by` to the case data object to satisfy the type requirements of `createCase`.
+            // FIX: Pass the current user's ID as the required third argument to `updateCase`.
+            await updateCase(initialData.case_id, formData, currentUser.user_id);
+        } else {
             await createCase({ ...formData, created_by: currentUser.user_id }, currentUser.user_id);
         }
         onSave();

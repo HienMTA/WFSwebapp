@@ -23,7 +23,6 @@ let artefacts: Artefact[] = [
     { artefact_id: 204, case_id: 103, evidence_type: 'Registry Hive', name: 'W01_NTUSER.DAT', file_size: 5242880, mime_type: 'application/octet-stream', collected_at: '2024-06-10T09:30:00Z', collected_by: 3 },
 ];
 
-// NEW: Add Host and CollectionJob types and data
 export interface Host {
     host_id: number;
     hostname: string;
@@ -44,6 +43,17 @@ export interface CollectionJob {
     completed_at?: string;
 }
 
+// NEW: Case Log for Audit Trail
+export interface CaseLog {
+    log_id: number;
+    case_id: number;
+    user_id: number;
+    action: string;
+    details: string;
+    timestamp: string;
+}
+
+
 let hosts: Host[] = [
     { host_id: 1, hostname: 'WEB-SRV-01', ip_address: '192.168.1.10', os: 'Windows Server 2022', status: 'ONLINE', last_seen: new Date().toISOString() },
     { host_id: 2, hostname: 'FIN-WS-23', ip_address: '192.168.2.55', os: 'Windows 11 Pro', status: 'ONLINE', last_seen: new Date().toISOString() },
@@ -53,6 +63,18 @@ let hosts: Host[] = [
 let collectionJobs: CollectionJob[] = [
     { job_id: 301, case_id: 101, host_id: 1, profile: 'Memory Dump', status: 'COMPLETED', created_at: '2024-07-18T10:05:00Z', created_by: 2, completed_at: '2024-07-18T10:14:00Z' },
     { job_id: 302, case_id: 104, host_id: 2, profile: 'Quick Triage', status: 'RUNNING', created_at: '2024-07-22T09:30:00Z', created_by: 1 },
+];
+
+let caseLogs: CaseLog[] = [
+    // Case 101
+    { log_id: 1, case_id: 101, user_id: 1, action: 'CASE_CREATED', details: 'Case "Unauthorized Access - Server XYZ" was created.', timestamp: '2024-07-18T10:00:00Z' },
+    { log_id: 2, case_id: 101, user_id: 2, action: 'COLLECTION_STARTED', details: 'Started collection job #301 (Memory Dump) on host WEB-SRV-01.', timestamp: '2024-07-18T10:05:00Z' },
+    { log_id: 3, case_id: 101, user_id: 2, action: 'ARTEFACT_ADDED', details: 'Added new artefact "server_xyz_memdump.vmem".', timestamp: '2024-07-18T10:15:00Z' },
+    { log_id: 4, case_id: 101, user_id: 2, action: 'ARTEFACT_ADDED', details: 'Added new artefact "server_xyz_disk0.e01".', timestamp: '2024-07-18T11:00:00Z' },
+    { log_id: 5, case_id: 101, user_id: 1, action: 'CASE_UPDATED', details: 'Case status changed to IN_PROGRESS.', timestamp: '2024-07-20T15:30:00Z' },
+    // Case 104
+    { log_id: 6, case_id: 104, user_id: 1, action: 'CASE_CREATED', details: 'Case "Phishing Attack - Finance Department" was created.', timestamp: '2024-07-20T14:00:00Z' },
+    { log_id: 7, case_id: 104, user_id: 1, action: 'COLLECTION_STARTED', details: 'Started collection job #302 (Quick Triage) on host FIN-WS-23.', timestamp: '2024-07-22T09:30:00Z' },
 ];
 
 
@@ -111,6 +133,16 @@ const fileSystemData: FileSystemNode = {
 const simulateDelay = <T,>(data: T): Promise<T> =>
   new Promise(resolve => setTimeout(() => resolve(data), 500));
 
+// NEW: Helper function to create a case log
+const createCaseLog = (logData: Omit<CaseLog, 'log_id' | 'timestamp'>) => {
+    const newLog: CaseLog = {
+        ...logData,
+        log_id: Math.max(...caseLogs.map(l => l.log_id), 0) + 1,
+        timestamp: new Date().toISOString(),
+    };
+    caseLogs.push(newLog);
+};
+
 export const authenticateUser = async (username: string): Promise<User | null> => {
     const user = users.find(u => u.username === username && u.is_active);
     return simulateDelay(user || null);
@@ -141,20 +173,49 @@ export const createCase = async (caseData: Omit<Case, 'case_id' | 'created_at' |
         updated_at: new Date().toISOString(),
     };
     cases.push(newCase);
+
+    createCaseLog({
+        case_id: newCase.case_id,
+        user_id: creatorId,
+        action: 'CASE_CREATED',
+        details: `Case "${newCase.title}" was created.`,
+    });
+
     return simulateDelay(newCase);
 };
 
-export const updateCase = async (caseId: number, caseData: Partial<Omit<Case, 'case_id'>>): Promise<Case> => {
+export const updateCase = async (caseId: number, caseData: Partial<Omit<Case, 'case_id' | 'created_by' | 'created_at' | 'updated_at'>>, updaterId: number): Promise<Case> => {
     const caseIndex = cases.findIndex(c => c.case_id === caseId);
     if (caseIndex === -1) throw new Error("Case not found");
-    
-    // FIX: Removed extra `new` keyword before `Date()`.
-    cases[caseIndex] = { ...cases[caseIndex], ...caseData, updated_at: new Date().toISOString() };
-    return simulateDelay(cases[caseIndex]);
+
+    const originalCase = { ...cases[caseIndex] };
+    const updatedCase = { ...cases[caseIndex], ...caseData, updated_at: new Date().toISOString() };
+    cases[caseIndex] = updatedCase;
+
+    // Log changes
+    const changes = Object.keys(caseData).map(key => {
+        const typedKey = key as keyof typeof caseData;
+        if (originalCase[typedKey] !== updatedCase[typedKey]) {
+            return `Changed ${key} from "${originalCase[typedKey]}" to "${updatedCase[typedKey]}".`;
+        }
+        return null;
+    }).filter(Boolean).join(' ');
+
+    if (changes) {
+        createCaseLog({
+            case_id: caseId,
+            user_id: updaterId,
+            action: 'CASE_UPDATED',
+            details: changes || 'Case details were updated.',
+        });
+    }
+
+    return simulateDelay(updatedCase);
 };
 
 export const deleteCase = async (caseId: number): Promise<{ success: true }> => {
     cases = cases.filter(c => c.case_id !== caseId);
+    // Note: In a real system, we might log this action too, but for now we'll skip it.
     return simulateDelay({ success: true });
 };
 
@@ -195,13 +256,21 @@ export const createArtefact = async (artefactData: Omit<Artefact, 'artefact_id' 
         collected_at: new Date().toISOString(),
     };
     artefacts.push(newArtefact);
+    
+    createCaseLog({
+        case_id: newArtefact.case_id,
+        user_id: newArtefact.collected_by,
+        action: 'ARTEFACT_ADDED',
+        details: `Added new artefact "${newArtefact.name}".`,
+    });
+
     return simulateDelay(newArtefact);
 };
 
 // File System
 export const getFileSystemData = async (): Promise<FileSystemNode> => simulateDelay(JSON.parse(JSON.stringify(fileSystemData)));
 
-// NEW: Hosts and Collection
+// Hosts and Collection
 export const getHosts = async (): Promise<Host[]> => simulateDelay([...hosts]);
 
 export const getCollectionJobsForCase = async (caseId: number): Promise<CollectionJob[]> => simulateDelay(collectionJobs.filter(j => j.case_id === caseId));
@@ -217,6 +286,14 @@ export const startCollectionJob = async (caseId: number, hostId: number, profile
         created_by: creatorId,
     };
     collectionJobs.push(newJob);
+
+    const host = hosts.find(h => h.host_id === hostId);
+    createCaseLog({
+        case_id: caseId,
+        user_id: creatorId,
+        action: 'COLLECTION_STARTED',
+        details: `Started collection job #${newJob.job_id} (${profile}) on host ${host?.hostname || 'Unknown'}.`,
+    });
 
     // Simulate job progress
     setTimeout(() => {
@@ -244,3 +321,11 @@ export const startCollectionJob = async (caseId: number, hostId: number, profile
 
     return simulateDelay(newJob);
 };
+
+// NEW: Case Logs
+export const getLogsForCase = async (caseId: number): Promise<CaseLog[]> => {
+    const logs = caseLogs
+        .filter(l => l.case_id === caseId)
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    return simulateDelay(logs);
+}
