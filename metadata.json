@@ -1,0 +1,5 @@
+{
+  "name": "Windows Forensic System",
+  "description": "A comprehensive web-based digital forensics platform for Windows systems. It allows for remote evidence collection, analysis, and reporting, featuring multi-user support, role-based access control, and a complete chain of custody.",
+  "requestFramePermissions": []
+}
