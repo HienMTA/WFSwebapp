@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnalysisIcon } from '../components/icons/Icons';
 import AnalysisSelectionModal from '../components/analysis/AnalysisSelectionModal';
+import { Artefact } from '../types';
 
 const tools = [
   { name: 'File System Analysis', description: 'Recover deleted files and analyze metadata.', path: '/analysis/file-system', enabled: true },
   { name: 'Memory Analysis', description: 'Volatility 3 integration for memory dumps.', path: '#', enabled: false },
-  { name: 'Registry Analysis', description: 'Parse hives and track user activity.', path: '#', enabled: false },
+  { name: 'Registry Analysis', description: 'Parse hives and track user activity.', path: '/analysis/registry', enabled: true },
   { name: 'Browser Forensics', description: 'Analyze history, cache, and cookies.', path: '#', enabled: false },
   { name: 'Metadata Extraction', description: 'Extract EXIF and document properties.', path: '#', enabled: false },
   { name: 'Event Log Viewer', description: 'Parse and analyze Windows Event Logs.', path: '#', enabled: false },
@@ -34,9 +35,9 @@ const AnalysisPage: React.FC = () => {
     setSelectedTool(null);
   };
 
-  const handleStartAnalysis = (caseId: string, artefactId: string) => {
-    if (selectedTool) {
-      navigate(selectedTool.path, { state: { caseId, artefactId } });
+  const handleStartAnalysis = (caseId: string, artefacts: Artefact[]) => {
+    if (selectedTool && artefacts.length > 0) {
+      navigate(selectedTool.path, { state: { caseId, artefacts } });
     }
     handleCloseModal();
   };

@@ -7,7 +7,7 @@ import { Case, Artefact } from '../../types';
 interface AnalysisSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onStart: (caseId: string, artefactId: string) => void;
+  onStart: (caseId: string, artefacts: Artefact[]) => void;
   toolName: string;
 }
 
@@ -15,7 +15,7 @@ const AnalysisSelectionModal: React.FC<AnalysisSelectionModalProps> = ({ isOpen,
   const [cases, setCases] = useState<Case[]>([]);
   const [artefacts, setArtefacts] = useState<Artefact[]>([]);
   const [selectedCaseId, setSelectedCaseId] = useState('');
-  const [selectedArtefactId, setSelectedArtefactId] = useState('');
+  const [selectedArtefactIds, setSelectedArtefactIds] = useState<Record<string, boolean>>({});
   const [loadingCases, setLoadingCases] = useState(true);
   const [loadingArtefacts, setLoadingArtefacts] = useState(false);
 
@@ -38,7 +38,7 @@ const AnalysisSelectionModal: React.FC<AnalysisSelectionModalProps> = ({ isOpen,
       setCases([]);
       setArtefacts([]);
       setSelectedCaseId('');
-      setSelectedArtefactId('');
+      setSelectedArtefactIds({});
     }
   }, [isOpen]);
 
@@ -47,7 +47,7 @@ const AnalysisSelectionModal: React.FC<AnalysisSelectionModalProps> = ({ isOpen,
       const loadArtefacts = async () => {
         setLoadingArtefacts(true);
         setArtefacts([]);
-        setSelectedArtefactId('');
+        setSelectedArtefactIds({});
         try {
           const artefactsData = await getArtefactsForCase(parseInt(selectedCaseId, 10));
           setArtefacts(artefactsData);
@@ -60,15 +60,26 @@ const AnalysisSelectionModal: React.FC<AnalysisSelectionModalProps> = ({ isOpen,
       loadArtefacts();
     } else {
       setArtefacts([]);
-      setSelectedArtefactId('');
+      setSelectedArtefactIds({});
     }
   }, [selectedCaseId]);
 
+  const handleArtefactSelection = (artefactId: string) => {
+    setSelectedArtefactIds(prev => ({
+      ...prev,
+      [artefactId]: !prev[artefactId],
+    }));
+  };
+
   const handleStart = () => {
-    if (selectedCaseId && selectedArtefactId) {
-      onStart(selectedCaseId, selectedArtefactId);
+    const selectedIds = Object.keys(selectedArtefactIds).filter(id => selectedArtefactIds[id]);
+    const selectedArtefacts = artefacts.filter(a => selectedIds.includes(a.artefact_id.toString()));
+    if (selectedCaseId && selectedArtefacts.length > 0) {
+      onStart(selectedCaseId, selectedArtefacts);
     }
   };
+
+  const hasSelectedArtefacts = Object.values(selectedArtefactIds).some(isSelected => isSelected);
 
   return (
     <Modal title={`Start ${toolName}`} isOpen={isOpen} onClose={onClose}>
@@ -94,30 +105,36 @@ const AnalysisSelectionModal: React.FC<AnalysisSelectionModalProps> = ({ isOpen,
         </div>
 
         <div>
-          <label htmlFor="artefact-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            2. Select an Artefact
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            2. Select Artefact(s)
           </label>
-          <select
-            id="artefact-select"
-            value={selectedArtefactId}
-            onChange={(e) => setSelectedArtefactId(e.target.value)}
-            disabled={!selectedCaseId || loadingArtefacts}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600"
-          >
-            <option value="">
-              {loadingArtefacts ? 'Loading artefacts...' : (artefacts.length > 0 ? 'Select an artefact' : 'No artefacts found')}
-            </option>
-            {artefacts.map((a) => (
-              <option key={a.artefact_id} value={a.artefact_id}>
-                {a.name} ({a.evidence_type})
-              </option>
+          <div className="mt-1 max-h-48 overflow-y-auto rounded-md border border-gray-300 dark:border-gray-600 p-2 space-y-1 bg-white dark:bg-gray-700">
+            {loadingArtefacts && <p className="text-sm text-gray-500">Loading artefacts...</p>}
+            {!loadingArtefacts && artefacts.length === 0 && selectedCaseId && (
+              <p className="text-sm text-gray-500">No artefacts found for this case.</p>
+            )}
+             {!selectedCaseId && (
+              <p className="text-sm text-gray-500">Please select a case first.</p>
+            )}
+            {artefacts.map((artefact) => (
+              <label key={artefact.artefact_id} className="flex items-center space-x-3 p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!!selectedArtefactIds[artefact.artefact_id]}
+                  onChange={() => handleArtefactSelection(artefact.artefact_id.toString())}
+                  className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="text-sm text-gray-900 dark:text-gray-200">
+                  {artefact.name} ({artefact.evidence_type})
+                </span>
+              </label>
             ))}
-          </select>
+          </div>
         </div>
         
         <div className="flex justify-end space-x-3 pt-4">
             <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-            <Button onClick={handleStart} disabled={!selectedArtefactId}>Start Analysis</Button>
+            <Button onClick={handleStart} disabled={!hasSelectedArtefacts}>Start Analysis</Button>
         </div>
       </div>
     </Modal>

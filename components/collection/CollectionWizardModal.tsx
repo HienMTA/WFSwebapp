@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
-import { getHosts, startCollectionJob, Host } from '../../services/mockApi';
+import { getHosts, startCollectionJob } from '../../services/mockApi';
+import { Host } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 
 interface CollectionWizardModalProps {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Case, Artefact, CaseStatus, CasePriority, User, UserRole } from '../types';
-import { getCaseById, getArtefactsForCase, getUsers, getCollectionJobsForCase, CollectionJob, getLogsForCase, CaseLog } from '../services/mockApi';
+// FIX: Consolidate type imports to the central types.ts file.
+import { Case, Artefact, CaseStatus, CasePriority, User, UserRole, CollectionJob, CaseLog } from '../types';
+import { getCaseById, getArtefactsForCase, getUsers, getCollectionJobsForCase, getLogsForCase } from '../services/mockApi';
 import { useAuth } from '../context/AuthContext';
 import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';

@@ -1,4 +1,5 @@
-import { Case, CaseStatus, CasePriority, User, UserRole, Artefact, FileSystemNode } from '../types';
+// FIX: Import Host, CollectionJob, and CaseLog from the centralized types.ts file.
+import { Case, CaseStatus, CasePriority, User, UserRole, Artefact, FileSystemNode, RegistryHive, RegistryValueType, Host, CollectionJob, CaseLog } from '../types';
 
 export let users: User[] = [
     { user_id: 1, username: 'jdoe', full_name: 'John Doe', email: 'john.doe@example.com', role: UserRole.ADMIN, is_active: true, created_at: '2023-01-15T09:30:00Z', last_login: '2024-07-20T10:00:00Z' },
@@ -12,8 +13,8 @@ let cases: Case[] = [
     { case_id: 101, title: 'Unauthorized Access - Server XYZ', description: 'Investigation into unauthorized access on the main web server.', status: CaseStatus.IN_PROGRESS, priority: CasePriority.CRITICAL, created_by: 1, assigned_to: 2, created_at: '2024-07-18T10:00:00Z', updated_at: '2024-07-20T15:30:00Z' },
     { case_id: 102, title: 'Data Exfiltration - Project Phoenix', description: 'Suspected data leak related to Project Phoenix.', status: CaseStatus.OPEN, priority: CasePriority.HIGH, created_by: 1, assigned_to: 2, created_at: '2024-07-19T11:30:00Z', updated_at: '2024-07-19T11:30:00Z' },
     { case_id: 103, title: 'Malware Outbreak - Workstation W01', description: 'A workstation is showing signs of malware infection.', status: CaseStatus.CLOSED, priority: CasePriority.MEDIUM, created_by: 2, assigned_to: 3, created_at: '2024-06-10T09:00:00Z', updated_at: '2024-06-15T18:00:00Z' },
-    { case_id: 104, title: 'Phishing Attack - Finance Department', description: 'Multiple users in the finance department reported a phishing email.', status: CaseStatus.IN_PROGRESS, priority: CasePriority.HIGH, created_by: 1, assigned_to: 3, created_at: '2024-07-20T14:00:00Z', updated_at: '2024-07-21T09:15:00Z' },
-    { case_id: 105, title: 'Insider Threat Investigation', description: 'Monitoring suspicious activity from an internal user account.', status: CaseStatus.OPEN, priority: CasePriority.MEDIUM, created_by: 2, assigned_to: 2, created_at: '2024-07-21T12:00:00Z', updated_at: '2024-07-21T12:00:00Z' },
+    { case_id: 104, title: 'Phishing Attack - Finance Department', description: 'Multiple users in the finance department reported a phishing email.', status: CaseStatus.IN_PROGRESS, priority: CasePriority.HIGH, created_by: 1, assigned_to: 1, created_at: '2024-07-20T14:00:00Z', updated_at: '2024-07-21T09:15:00Z' },
+    { case_id: 105, title: 'Insider Threat Investigation', description: 'Monitoring suspicious activity from an internal user account.', status: CaseStatus.OPEN, priority: CasePriority.MEDIUM, created_by: 2, assigned_to: 1, created_at: '2024-07-21T12:00:00Z', updated_at: '2024-07-21T12:00:00Z' },
 ];
 
 let artefacts: Artefact[] = [
@@ -23,36 +24,7 @@ let artefacts: Artefact[] = [
     { artefact_id: 204, case_id: 103, evidence_type: 'Registry Hive', name: 'W01_NTUSER.DAT', file_size: 5242880, mime_type: 'application/octet-stream', collected_at: '2024-06-10T09:30:00Z', collected_by: 3 },
 ];
 
-export interface Host {
-    host_id: number;
-    hostname: string;
-    ip_address: string;
-    os: string;
-    status: 'ONLINE' | 'OFFLINE';
-    last_seen: string;
-}
-
-export interface CollectionJob {
-    job_id: number;
-    case_id: number;
-    host_id: number;
-    profile: string;
-    status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
-    created_at: string;
-    created_by: number;
-    completed_at?: string;
-}
-
-// NEW: Case Log for Audit Trail
-export interface CaseLog {
-    log_id: number;
-    case_id: number;
-    user_id: number;
-    action: string;
-    details: string;
-    timestamp: string;
-}
-
+// FIX: Removed interface definitions for Host, CollectionJob, and CaseLog as they have been moved to types.ts.
 
 let hosts: Host[] = [
     { host_id: 1, hostname: 'WEB-SRV-01', ip_address: '192.168.1.10', os: 'Windows Server 2022', status: 'ONLINE', last_seen: new Date().toISOString() },
@@ -129,6 +101,135 @@ const fileSystemData: FileSystemNode = {
     ]
 };
 
+// NEW: Mock Registry Data with more forensic artifacts
+const registryData: RegistryHive = {
+    name: 'NTUSER.DAT',
+    root: {
+        id: 'hkcu',
+        path: 'HKEY_CURRENT_USER',
+        name: 'HKEY_CURRENT_USER',
+        lastWriteTimestamp: '2024-07-22T10:00:00Z',
+        values: [],
+        subkeys: [
+            {
+                id: 'hkcu-software',
+                path: 'HKEY_CURRENT_USER\\Software',
+                name: 'Software',
+                lastWriteTimestamp: '2024-07-22T10:05:00Z',
+                values: [
+                     { name: '(Default)', type: RegistryValueType.REG_SZ, data: '(value not set)' },
+                ],
+                subkeys: [
+                    {
+                        id: 'hkcu-software-microsoft',
+                        path: 'HKEY_CURRENT_USER\\Software\\Microsoft',
+                        name: 'Microsoft',
+                        lastWriteTimestamp: '2024-07-22T10:05:10Z',
+                        values: [],
+                        subkeys: [
+                             {
+                                id: 'hkcu-software-microsoft-windows',
+                                path: 'HKEY_CURRENT_USER\\Software\\Microsoft\\Windows',
+                                name: 'Windows',
+                                lastWriteTimestamp: '2024-07-22T10:06:00Z',
+                                values: [],
+                                subkeys: [
+                                    {
+                                        id: 'hkcu-software-microsoft-windows-currentversion',
+                                        path: 'HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion',
+                                        name: 'CurrentVersion',
+                                        lastWriteTimestamp: '2024-07-22T10:06:30Z',
+                                        values: [],
+                                        subkeys: [
+                                            {
+                                                id: 'hkcu-software-microsoft-windows-currentversion-run',
+                                                path: 'HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run',
+                                                name: 'Run',
+                                                lastWriteTimestamp: '2024-07-20T08:30:00Z',
+                                                values: [
+                                                    { name: 'OneDrive', type: RegistryValueType.REG_SZ, data: '"C:\\Program Files\\Microsoft OneDrive\\OneDrive.exe" /background' },
+                                                    { name: 'SuspiciousApp', type: RegistryValueType.REG_SZ, data: 'C:\\Users\\jdoe\\AppData\\Local\\Temp\\malicious.exe -run' },
+                                                ],
+                                                subkeys: [],
+                                            },
+                                            {
+                                                id: 'hkcu-software-microsoft-windows-currentversion-explorer',
+                                                path: 'HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer',
+                                                name: 'Explorer',
+                                                lastWriteTimestamp: '2024-07-21T14:20:00Z',
+                                                values: [],
+                                                subkeys: [
+                                                    {
+                                                        id: 'hkcu-software-microsoft-windows-currentversion-explorer-typedpaths',
+                                                        path: 'HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\TypedPaths',
+                                                        name: 'TypedPaths',
+                                                        lastWriteTimestamp: '2024-07-21T14:22:00Z',
+                                                        values: [
+                                                            { name: 'url1', type: RegistryValueType.REG_SZ, data: 'C:\\Users\\jdoe\\Documents\\secret.docx' },
+                                                            { name: 'url2', type: RegistryValueType.REG_SZ, data: '\\\\fileserver\\shares\\confidential' },
+                                                        ],
+                                                        subkeys: [],
+                                                    },
+                                                    {
+                                                        id: 'hkcu-software-microsoft-windows-currentversion-explorer-userassist',
+                                                        path: 'HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist',
+                                                        name: 'UserAssist',
+                                                        lastWriteTimestamp: '2024-07-21T15:00:00Z',
+                                                        values: [],
+                                                        subkeys: [
+                                                            {
+                                                                id: 'hkcu-software-microsoft-windows-currentversion-explorer-userassist-guid1',
+                                                                path: 'HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{CEBFF5CD-ACE2-4F4F-9178-9926F41749EA}',
+                                                                name: '{CEBFF5CD-ACE2-4F4F-9178-9926F41749EA}',
+                                                                lastWriteTimestamp: '2024-07-21T15:01:00Z',
+                                                                values: [
+                                                                    // ROT13 encoded values
+                                                                    { name: 'P:\\Hfref\\wqbr\\Qbfxhcc\\frperg.rkr', type: RegistryValueType.REG_BINARY, data: '...binary data...' }, // C:\Users\jdoe\Desktop\secret.exe
+                                                                    { name: 'P:\\Cebtenz Svyrf\\Zvpebfbsg Bssvpr\\BSSVPR16\\RKPRY.RKR', type: RegistryValueType.REG_BINARY, data: '...binary data...' }, // C:\Program Files\Microsoft Office\OFFICE16\EXCEL.EXE
+                                                                ],
+                                                                subkeys: [],
+                                                            }
+                                                        ],
+                                                    }
+                                                ],
+                                            },
+                                        ]
+                                    }
+                                ]
+                            },
+                             {
+                                id: 'hkcu-software-microsoft-windows-currentversion-enum',
+                                path: 'HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Enum',
+                                name: 'Enum',
+                                lastWriteTimestamp: '2024-07-19T11:00:00Z',
+                                values: [],
+                                subkeys: [
+                                     {
+                                        id: 'hkcu-software-microsoft-windows-currentversion-enum-usbstor',
+                                        path: 'HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Enum\\USBSTOR',
+                                        name: 'USBSTOR',
+                                        lastWriteTimestamp: '2024-07-19T11:05:00Z',
+                                        values: [],
+                                        subkeys: [
+                                             {
+                                                id: 'usbstor-kingston',
+                                                path: 'HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Enum\\USBSTOR\\Disk&Ven_Kingston&Prod_DataTraveler_3.0&Rev_PMAP',
+                                                name: 'Disk&Ven_Kingston&Prod_DataTraveler_3.0&Rev_PMAP',
+                                                lastWriteTimestamp: '2024-07-19T11:05:10Z',
+                                                values: [ { name: 'FriendlyName', type: RegistryValueType.REG_SZ, data: 'Kingston DataTraveler 3.0 USB Device' } ],
+                                                subkeys: [],
+                                            }
+                                        ],
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+};
 
 const simulateDelay = <T,>(data: T): Promise<T> =>
   new Promise(resolve => setTimeout(() => resolve(data), 500));
@@ -148,17 +249,25 @@ export const authenticateUser = async (username: string): Promise<User | null> =
     return simulateDelay(user || null);
 }
 
-export const getDashboardStats = async () => simulateDelay({
-  totalCases: cases.length,
-  openCases: cases.filter(c => c.status === CaseStatus.OPEN).length,
-  inProgressCases: cases.filter(c => c.status === CaseStatus.IN_PROGRESS).length,
-  totalUsers: users.length,
-  recentActivity: [
-      { user: 'Alice Smith', action: 'opened case #105', time: '2 hours ago' },
-      { user: 'Bob Williams', action: 'analyzed artefact #203', time: '5 hours ago' },
-      { user: 'John Doe', action: 'assigned case #104 to Bob Williams', time: '1 day ago' },
-  ]
-});
+export const getDashboardData = async () => {
+    const sortedLogs = [...caseLogs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const recentLogs = sortedLogs.slice(0, 5).map(log => {
+        const user = users.find(u => u.user_id === log.user_id);
+        return {
+            ...log,
+            userName: user ? user.full_name : 'Unknown User',
+        };
+    });
+
+    return simulateDelay({
+        totalCases: cases.length,
+        openCases: cases.filter(c => c.status === CaseStatus.OPEN).length,
+        inProgressCases: cases.filter(c => c.status === CaseStatus.IN_PROGRESS).length,
+        highPriorityCases: cases.filter(c => c.priority === CasePriority.HIGH || c.priority === CasePriority.CRITICAL).length,
+        allCases: [...cases],
+        recentLogs,
+    });
+};
 
 // Cases CRUD
 export const getCases = async (): Promise<Case[]> => simulateDelay([...cases]);
@@ -269,6 +378,10 @@ export const createArtefact = async (artefactData: Omit<Artefact, 'artefact_id' 
 
 // File System
 export const getFileSystemData = async (): Promise<FileSystemNode> => simulateDelay(JSON.parse(JSON.stringify(fileSystemData)));
+
+// NEW: Registry
+export const getRegistryHiveData = async (): Promise<RegistryHive> => simulateDelay(JSON.parse(JSON.stringify(registryData)));
+
 
 // Hosts and Collection
 export const getHosts = async (): Promise<Host[]> => simulateDelay([...hosts]);

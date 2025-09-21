@@ -13,6 +13,7 @@ import LoginPage from './pages/LoginPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { UserRole } from './types';
 import HostsPage from './pages/HostsPage';
+import RegistryAnalysisPage from './pages/RegistryAnalysisPage';
 
 const AppContent: React.FC = () => {
     const { user } = useAuth();
@@ -36,6 +37,7 @@ const AppContent: React.FC = () => {
                            <>
                              <Route path="/analysis" element={<AnalysisPage />} />
                              <Route path="/analysis/file-system" element={<FileSystemAnalysisPage />} />
+                             <Route path="/analysis/registry" element={<RegistryAnalysisPage />} />
                            </>
                         )}
 

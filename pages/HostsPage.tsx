@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { getHosts, Host } from '../services/mockApi';
+// FIX: Import Host type from the central types.ts file.
+import { getHosts } from '../services/mockApi';
+import { Host } from '../types';
 
 const getStatusColor = (status: Host['status']) => {
     switch (status) {
